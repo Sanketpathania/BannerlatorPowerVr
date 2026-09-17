@@ -68,6 +68,11 @@
       "name": "vegas.enableFramegen",
       "introducedIn": "2.4.1-cf04e7f",
       "note": "frame-generation master switch, Auto tri-state"
+    },
+    {
+      "name": "vegas.powervr.dxtFix",
+      "introducedIn": "3.0",
+      "note": "Pixel 10 Tensor G5 PowerVR DXT-48-1536 memory alignment and BCn emulation workaround"
     }
   ],
   "envStyle": [

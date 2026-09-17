@@ -73,17 +73,52 @@ export const SCREEN_RESOLUTIONS = [
 ];
 
 export const SAMPLE_GPUS: GpuCard[] = [
-  { name: 'PowerVR Rogue GE8320 (Vulkan 1.1 / BCn Layer)', deviceID: 5710, vendorID: 4098, type: 'PowerVR' },
-  { name: 'PowerVR B-Series BXM-4-64', deviceID: 5711, vendorID: 4098, type: 'PowerVR' },
+  { name: 'Google Pixel 10 - Imagination PowerVR DXT-48-1536 (Tensor G5)', deviceID: 5430, vendorID: 4112, type: 'PowerVR' },
+  { name: 'Google Pixel 10 Pro - PowerVR DXT-48-1536 Ray Tracing Edition', deviceID: 5431, vendorID: 4112, type: 'PowerVR' },
+  { name: 'PowerVR Rogue GE8320 (Vulkan 1.1 / BCn Layer)', deviceID: 5710, vendorID: 4112, type: 'PowerVR' },
+  { name: 'PowerVR B-Series BXM-4-64', deviceID: 5711, vendorID: 4112, type: 'PowerVR' },
   { name: 'ARM Mali-G77 MC9 (Bionic Vulkan)', deviceID: 26544, vendorID: 4098, type: 'Mali' },
   { name: 'Qualcomm Adreno 730 (Turnip 25.1.0)', deviceID: 8758, vendorID: 4318, type: 'Adreno' },
   { name: 'NVIDIA GeForce GTX 1060', deviceID: 7171, vendorID: 4318, type: 'NVIDIA' },
-  { name: 'NVIDIA GeForce GTX 750 Ti', deviceID: 4992, vendorID: 4318, type: 'NVIDIA' },
   { name: 'AMD Radeon RX 5700 XT', deviceID: 29471, vendorID: 4098, type: 'AMD' },
   { name: 'Intel(R) Iris(TM) Pro Graphics 5200', deviceID: 3362, vendorID: 32902, type: 'Intel' }
 ];
 
 export const INITIAL_CONTAINERS: Container[] = [
+  {
+    id: 'c-pixel10',
+    name: 'Google Pixel 10 (Tensor G5 PowerVR DXT)',
+    screenSize: '2400x1080 (20:9 Ultrawide)',
+    graphicsDriver: 'GameNative 20260723',
+    dxwrapper: 'DXVK 2.3.1-arm64ec-gplasync',
+    audioDriver: 'DirectAudio',
+    wineVersion: 'Wine 10.0 Staging Bionic (ARM64EC)',
+    winArchitecture: '64-bit',
+    gpuName: 'Google Pixel 10 - Imagination PowerVR DXT-48-1536 (Tensor G5)',
+    gpuVendorId: 4112,
+    gpuDeviceId: 5430,
+    videoMemorySizeMB: 4096,
+    cpuCores: 8,
+    box64Preset: 'Performance',
+    bionicFgEnabled: true,
+    leegaoBcnEnabled: true,
+    createdDate: '2026-09-17',
+    envVars: [
+      { key: 'BOX64_DYNAREC', value: '1', enabled: true },
+      { key: 'BOX64_DYNAREC_FASTNAN', value: '1', enabled: true },
+      { key: 'BOX64_DYNAREC_BIGBLOCK', value: '2', enabled: true },
+      { key: 'BOX64_DYNAREC_FORWARD', value: '512', enabled: true },
+      { key: 'DXVK_HUD', value: 'fps,frametimes,gpuload,version', enabled: true },
+      { key: 'WINE_VK_VULKAN_ICD', value: 'libvulkan_powervr.so', enabled: true },
+      { key: 'vegas.forceTranscode', value: '1', enabled: true },
+      { key: 'vegas.powervr.dxtFix', value: '1', enabled: true }
+    ],
+    drives: [
+      { letter: 'C:', path: '/storage/emulated/0/Winlator/drives/c' },
+      { letter: 'D:', path: '/storage/emulated/0/Download' },
+      { letter: 'Z:', path: '/' }
+    ]
+  },
   {
     id: 'c1',
     name: 'PowerVR Bionic Gaming (64-bit)',

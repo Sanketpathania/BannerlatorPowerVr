@@ -1,6 +1,6 @@
 {
   "name": "Bannerlator PowerVR",
-  "description": "Winlator / Bannerlator Bionic x86/x64 Windows emulation manager, container configurator, input controls editor, and performance HUD simulator.",
+  "description": "Winlator / Bannerlator Bionic Windows emulation manager, container configurator with Google Pixel 10 PowerVR DXT GPU compatibility, input controls editor, and performance HUD simulator.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
