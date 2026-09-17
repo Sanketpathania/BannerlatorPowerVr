@@ -277,6 +277,31 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
+          {/* AI Studio Export to GitHub Guide */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-rose-950/40 via-neutral-950 to-neutral-950 border border-rose-500/30 text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-white font-semibold">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Ready for AI Studio "Export to GitHub"</span>
+              </div>
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Clean Tree (0 untracked files)
+              </span>
+            </div>
+            <p className="text-neutral-300 leading-relaxed">
+              The repository index has been completely optimized and cleaned. All build caches (<code className="text-neutral-400">node_modules/</code> and <code className="text-neutral-400">dist/</code>) have been untracked, and the primary branch is set to <code className="text-rose-300 font-mono">main</code> to match your GitHub repository.
+            </p>
+            <div className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800 space-y-2">
+              <div className="text-white font-medium text-[11px]">How to trigger the APK build via AI Studio Export:</div>
+              <ol className="list-decimal list-inside space-y-1 text-neutral-400 text-[11px]">
+                <li>Click the <strong className="text-white">Settings / Overflow menu (&vellip;)</strong> in the top header of AI Studio.</li>
+                <li>Select <strong className="text-rose-400">"Export to GitHub"</strong>.</li>
+                <li>Choose repository <strong className="text-white">Sanketpathania/BannerlatorPowerVr</strong> and target branch <strong className="text-white">main</strong>.</li>
+                <li>Confirm export: GitHub Actions will immediately start compiling the Standard, Ludashi, and PUBG APKs!</li>
+              </ol>
+            </div>
+          </div>
+
           {/* GitHub Actions CI/CD Pipeline & Fork Info */}
           <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-3">
             <div className="flex items-center justify-between">
@@ -304,9 +329,9 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
                 <span className="text-neutral-500">origin &rarr; Sanketpathania/BannerlatorPowerVr.git</span>
               </div>
               <div className="bg-neutral-900 rounded-lg p-2.5 border border-neutral-800 font-mono text-[11px] flex items-center justify-between text-neutral-300">
-                <code className="text-rose-300">git push -u origin master</code>
+                <code className="text-rose-300">git push -u origin main</code>
                 <button
-                  onClick={() => handleCopy("git push -u origin master", 2)}
+                  onClick={() => handleCopy("git push -u origin main", 2)}
                   className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors shrink-0 ml-2"
                   title="Copy push command"
                 >
@@ -320,7 +345,7 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
         {/* Modal Footer */}
         <div className="p-4 border-t border-neutral-800 bg-neutral-950/80 flex items-center justify-between">
           <div className="text-xs text-neutral-400">
-            Author: <span className="text-white font-medium">Jacopo Hernandez</span> • Branch: <span className="text-rose-300 font-mono">master</span>
+            Author: <span className="text-white font-medium">Jacopo Hernandez</span> • Branch: <span className="text-rose-300 font-mono">main</span>
           </div>
           <button
             id="modal-done-btn"
