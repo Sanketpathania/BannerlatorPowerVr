@@ -1,0 +1,531 @@
+From 9602b82133e2d4bde979abefcd4e50ea586fde83 Mon Sep 17 00:00:00 2001
+From: Jacopo Hernandez <jacopo.hernandez@bannerlator.internal>
+Date: Thu, 17 Sep 2026 12:18:29 +0000
+Subject: [PATCH 1/2] feat(ci): configure push trigger for APK build artifacts
+ and add in-app APK build hub
+
+---
+ .github/workflows/build-artifacts.yml |  15 +-
+ .gitignore                            |   5 +
+ src/App.tsx                           |   9 +
+ src/components/ApkBuildModal.tsx      | 296 ++++++++++++++++++++++++++
+ src/components/Navbar.tsx             |  24 ++-
+ 5 files changed, 337 insertions(+), 12 deletions(-)
+ create mode 100644 src/components/ApkBuildModal.tsx
+
+diff --git a/.github/workflows/build-artifacts.yml b/.github/workflows/build-artifacts.yml
+index fffea97..ec48205 100644
+--- a/.github/workflows/build-artifacts.yml
++++ b/.github/workflows/build-artifacts.yml
+@@ -8,9 +8,18 @@ on:
+   workflow_dispatch:
+     inputs:
+       release_number:
+-        description: 'Label for APK file names (e.g. 1.0-fixes)'
++        description: 'Label for APK file names (e.g. 1.0-pixel10-dxt)'
+         required: true
+-        default: '1.0-test'
++        default: '1.0-pixel10-dxt'
++  push:
++    branches:
++      - master
++      - main
++    paths-ignore:
++      - '**.md'
++      - 'docs/**'
++    tags:
++      - 'v*'
+ 
+ permissions:
+   contents: read
+@@ -19,7 +28,7 @@ jobs:
+   build:
+     uses: ./.github/workflows/_build.yml
+     with:
+-      release_number: ${{ inputs.release_number }}
++      release_number: ${{ inputs.release_number || '1.0-pixel10-dxt' }}
+     secrets:
+       # Test builds bundle the Samsung Galaxy Performance SDK when the secret is present
+       # (empty otherwise). release.yml deliberately does NOT pass this, so public release
+diff --git a/.gitignore b/.gitignore
+index 328bdd2..8f72ca7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -28,3 +28,8 @@ scratchpad/
+ # dxvk-nvapi dlls: fetched and sha256-checked by _build.yml from the release pinned in
+ # app/src/main/assets/dxvk-nvapi/manifest.json, never committed.
+ app/src/main/assets/dxvk-nvapi/*.dll
++
++# Web applet distribution and dependencies
++node_modules/
++dist/
++.vite/
+diff --git a/src/App.tsx b/src/App.tsx
+index fe779fa..7af0eb0 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -14,6 +14,7 @@ import { InputControlsView } from './components/InputControlsView';
+ import { PowerVRAdvisorView } from './components/PowerVRAdvisorView';
+ import { WineComponentsView } from './components/WineComponentsView';
+ import { SessionSimulatorModal } from './components/SessionSimulatorModal';
++import { ApkBuildModal } from './components/ApkBuildModal';
+ import { Sparkles, Check, Smartphone, Zap } from 'lucide-react';
+ 
+ export const App: React.FC = () => {
+@@ -67,6 +68,7 @@ export const App: React.FC = () => {
+   });
+ 
+   const [activeTab, setActiveTab] = useState<ViewTab>('containers');
++  const [apkModalOpen, setApkModalOpen] = useState(false);
+   const [sessionModalOpen, setSessionModalOpen] = useState(false);
+   const [activeSessionContainer, setActiveSessionContainer] = useState<Container | null>(null);
+   const [activeSessionShortcut, setActiveSessionShortcut] = useState<Shortcut | null>(null);
+@@ -250,6 +252,7 @@ export const App: React.FC = () => {
+         activeTab={activeTab}
+         onTabChange={setActiveTab}
+         onLaunchContainer={() => handleLaunchContainer(activeContainer)}
++        onOpenApkModal={() => setApkModalOpen(true)}
+         activeContainerName={activeContainer?.name || 'Default'}
+       />
+ 
+@@ -336,6 +339,12 @@ export const App: React.FC = () => {
+           }}
+         />
+       )}
++
++      {/* APK Build & Release Modal */}
++      <ApkBuildModal
++        isOpen={apkModalOpen}
++        onClose={() => setApkModalOpen(false)}
++      />
+     </div>
+   );
+ };
+diff --git a/src/components/ApkBuildModal.tsx b/src/components/ApkBuildModal.tsx
+new file mode 100644
+index 0000000..2102c41
+--- /dev/null
++++ b/src/components/ApkBuildModal.tsx
+@@ -0,0 +1,296 @@
++import React, { useState } from 'react';
++import { 
++  X, 
++  Package, 
++  Download, 
++  GitBranch, 
++  CheckCircle2, 
++  Terminal, 
++  Copy, 
++  Check, 
++  Cpu, 
++  Layers, 
++  ShieldCheck, 
++  ExternalLink,
++  Flame,
++  ArrowRight
++} from 'lucide-react';
++
++interface ApkBuildModalProps {
++  isOpen: boolean;
++  onClose: () => void;
++}
++
++export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose }) => {
++  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
++  const [activeFlavor, setActiveFlavor] = useState<'standard' | 'ludashi' | 'pubg'>('ludashi');
++  const [downloadSuccess, setDownloadSuccess] = useState(false);
++
++  if (!isOpen) return null;
++
++  const flavors = [
++    {
++      id: 'standard' as const,
++      name: 'Standard Flavor',
++      apkFile: 'Bannerlator-1.0-pixel10-dxt-standard.apk',
++      task: './gradlew assembleStandardRelease',
++      size: '~572 MB',
++      description: 'Base Winlator with pure Wine 10 Staging + Bionic libc and Box64 Dynarec.',
++      recommended: false,
++    },
++    {
++      id: 'ludashi' as const,
++      name: 'Ludashi Flavor (HUD + Vegas)',
++      apkFile: 'Bannerlator-1.0-pixel10-dxt-ludashi.apk',
++      task: './gradlew assembleLudashiRelease',
++      size: '~588 MB',
++      description: 'Optimized for mobile GPUs with WinlatorHUD, Vegas Engine 3.0, and Pixel 10 PowerVR DXT BCn transcoding.',
++      recommended: true,
++    },
++    {
++      id: 'pubg' as const,
++      name: 'PUBG Layer Flavor',
++      apkFile: 'Bannerlator-1.0-pixel10-dxt-pubg.apk',
++      task: './gradlew assemblePubgRelease',
++      size: '~594 MB',
++      description: 'Includes GameNative 20260723 driver layer and extended controller mapping presets.',
++      recommended: false,
++    }
++  ];
++
++  const handleCopy = (text: string, index: number) => {
++    navigator.clipboard.writeText(text);
++    setCopiedIndex(index);
++    setTimeout(() => setCopiedIndex(null), 2000);
++  };
++
++  const handleDownloadManifest = () => {
++    const manifest = {
++      project: "Bannerlator (Winlator Star Fork)",
++      version: "1.0-pixel10-dxt",
++      commitAuthor: "Jacopo Hernandez",
++      branch: "master",
++      targetHardware: "Google Pixel 10 (Tensor G5 - Imagination PowerVR DXT-48-1536)",
++      gpuProfile: {
++        vendorId: 4112,
++        vendorHex: "0x1010",
++        deviceId: 5430,
++        deviceHex: "0x1536",
++        driver: "GameNative 20260723",
++        transcodeLayer: "leegao_bcn v2.1"
++      },
++      ciWorkflow: ".github/workflows/build-artifacts.yml",
++      matrixJobs: [
++        { flavor: "standard", task: "assembleStandardRelease", output: "Bannerlator-1.0-pixel10-dxt-standard.apk" },
++        { flavor: "ludashi", task: "assembleLudashiRelease", output: "Bannerlator-1.0-pixel10-dxt-ludashi.apk" },
++        { flavor: "pubg", task: "assemblePubgRelease", output: "Bannerlator-1.0-pixel10-dxt-pubg.apk" }
++      ],
++      generatedAt: new Date().toISOString()
++    };
++
++    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
++    const url = URL.createObjectURL(blob);
++    const a = document.createElement('a');
++    a.href = url;
++    a.download = `bannerlator-pixel10-build-manifest.json`;
++    document.body.appendChild(a);
++    a.click();
++    document.body.removeChild(a);
++    URL.revokeObjectURL(url);
++
++    setDownloadSuccess(true);
++    setTimeout(() => setDownloadSuccess(false), 3000);
++  };
++
++  return (
++    <div id="apk-build-modal" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
++      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
++        {/* Modal Header */}
++        <div className="flex items-center justify-between p-5 border-b border-neutral-800 bg-neutral-950/60">
++          <div className="flex items-center space-x-3">
++            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-amber-500 flex items-center justify-center text-white shadow-lg shadow-rose-950/50">
++              <Package className="w-5 h-5" />
++            </div>
++            <div>
++              <div className="flex items-center space-x-2">
++                <h3 className="text-lg font-bold text-white">APK Build & CI Dispatch Hub</h3>
++                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
++                  Pixel 10 Ready
++                </span>
++              </div>
++              <p className="text-xs text-neutral-400">
++                Multi-Flavor Android compilation matrix & GitHub Actions deployment
++              </p>
++            </div>
++          </div>
++          <button
++            id="close-apk-modal-btn"
++            onClick={onClose}
++            className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
++          >
++            <X className="w-5 h-5" />
++          </button>
++        </div>
++
++        {/* Modal Body */}
++        <div className="p-6 overflow-y-auto space-y-6">
++          {/* Status Banner */}
++          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
++            <div className="flex items-center space-x-3">
++              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
++                <CheckCircle2 className="w-5 h-5" />
++              </div>
++              <div>
++                <div className="text-sm font-semibold text-white">
++                  GitHub Actions Push Trigger Active
++                </div>
++                <div className="text-xs text-neutral-400">
++                  <span className="font-mono text-neutral-300">.github/workflows/build-artifacts.yml</span> is configured to trigger on pushes to <span className="font-mono text-rose-300">master</span>.
++                </div>
++              </div>
++            </div>
++            <button
++              id="download-build-manifest-btn"
++              onClick={handleDownloadManifest}
++              className="flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition-colors shadow-md shadow-rose-950/40 shrink-0"
++            >
++              {downloadSuccess ? (
++                <>
++                  <Check className="w-4 h-4 text-emerald-300" />
++                  <span>Manifest Saved!</span>
++                </>
++              ) : (
++                <>
++                  <Download className="w-4 h-4" />
++                  <span>Download Build Spec</span>
++                </>
++              )}
++            </button>
++          </div>
++
++          {/* Flavor Selector */}
++          <div>
++            <div className="flex items-center justify-between mb-3">
++              <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
++                Select Product Flavor for APK Output
++              </label>
++              <span className="text-xs text-neutral-500 font-mono">
++                matrix: [standard, ludashi, pubg]
++              </span>
++            </div>
++            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
++              {flavors.map((f) => {
++                const isSelected = activeFlavor === f.id;
++                return (
++                  <div
++                    key={f.id}
++                    id={`flavor-card-${f.id}`}
++                    onClick={() => setActiveFlavor(f.id)}
++                    className={`cursor-pointer p-4 rounded-xl border transition-all text-left relative ${
++                      isSelected
++                        ? 'bg-rose-950/20 border-rose-500 shadow-md shadow-rose-950/30'
++                        : 'bg-neutral-950/40 border-neutral-800 hover:border-neutral-700'
++                    }`}
++                  >
++                    {f.recommended && (
++                      <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
++                        Recommended
++                      </span>
++                    )}
++                    <div className="flex items-center space-x-2 mb-1.5">
++                      <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-rose-500' : 'bg-neutral-600'}`} />
++                      <span className="font-semibold text-sm text-white">{f.name}</span>
++                    </div>
++                    <p className="text-xs text-neutral-400 line-clamp-2 mb-3">
++                      {f.description}
++                    </p>
++                    <div className="flex items-center justify-between text-[11px] text-neutral-500 border-t border-neutral-800/80 pt-2 font-mono">
++                      <span>Size: {f.size}</span>
++                      <span className="text-rose-400/90 font-medium">Release APK</span>
++                    </div>
++                  </div>
++                );
++              })}
++            </div>
++          </div>
++
++          {/* Active Flavor Build Instructions */}
++          {(() => {
++            const current = flavors.find((f) => f.id === activeFlavor)!;
++            return (
++              <div className="space-y-3">
++                <div className="flex items-center justify-between">
++                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-400 flex items-center space-x-1.5">
++                    <Terminal className="w-3.5 h-3.5 text-rose-400" />
++                    <span>Gradle Build Command ({current.name})</span>
++                  </span>
++                  <span className="text-xs text-neutral-400 font-mono">{current.apkFile}</span>
++                </div>
++                <div className="bg-neutral-950 rounded-xl p-3 border border-neutral-800 font-mono text-xs flex items-center justify-between">
++                  <code className="text-rose-300 overflow-x-auto py-1">
++                    {current.task} -PversionName=1.0-pixel10-dxt
++                  </code>
++                  <button
++                    id="copy-gradle-cmd-btn"
++                    onClick={() => handleCopy(`${current.task} -PversionName=1.0-pixel10-dxt`, 1)}
++                    className="p-1.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors shrink-0 ml-2"
++                    title="Copy command"
++                  >
++                    {copiedIndex === 1 ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
++                  </button>
++                </div>
++              </div>
++            );
++          })()}
++
++          {/* Hardware & Compatibility Payload Injected */}
++          <div className="p-4 rounded-xl bg-neutral-950/60 border border-neutral-800 space-y-3">
++            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center space-x-2">
++              <Cpu className="w-4 h-4 text-amber-400" />
++              <span>Pixel 10 Hardware Assets Bundled In This Build</span>
++            </h4>
++            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
++              <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800/80">
++                <div className="text-neutral-400 font-mono text-[11px]">app/src/main/assets/gpu_cards.json</div>
++                <div className="text-white font-medium mt-0.5">
++                  Pixel 10 PowerVR DXT-48-1536 (Vendor 0x1010, Device 0x1536)
++                </div>
++              </div>
++              <div className="p-2.5 rounded-lg bg-neutral-900 border border-neutral-800/80">
++                <div className="text-neutral-400 font-mono text-[11px]">app/src/main/assets/vegas_knowledge.json</div>
++                <div className="text-white font-medium mt-0.5">
++                  Vegas Engine 3.0 (vegas.powervr.dxtFix=1, leegao BCn transcoding)
++                </div>
++              </div>
++            </div>
++          </div>
++
++          {/* GitHub Actions CI/CD Pipeline Info */}
++          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-2">
++            <div className="flex items-center space-x-2 text-white font-semibold">
++              <GitBranch className="w-4 h-4 text-rose-400" />
++              <span>CI/CD Workflow Execution on Push</span>
++            </div>
++            <p className="text-neutral-400 leading-relaxed">
++              When commits are pushed to <code className="text-neutral-300">master</code>, the workflow at <code className="text-rose-300">.github/workflows/build-artifacts.yml</code> runs the <code className="text-neutral-300">_build.yml</code> reusable matrix. Each flavor builds concurrently across Ubuntu runners with JDK 17, Android SDK 34, and NDK r25c, uploading the three independent APK artifacts directly to GitHub Actions.
++            </p>
++          </div>
++        </div>
++
++        {/* Modal Footer */}
++        <div className="p-4 border-t border-neutral-800 bg-neutral-950/80 flex items-center justify-between">
++          <div className="text-xs text-neutral-400">
++            Author: <span className="text-white font-medium">Jacopo Hernandez</span> • Branch: <span className="text-rose-300 font-mono">master</span>
++          </div>
++          <button
++            id="modal-done-btn"
++            onClick={onClose}
++            className="px-5 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-semibold transition-colors"
++          >
++            Done
++          </button>
++        </div>
++      </div>
++    </div>
++  );
++};
+diff --git a/src/components/Navbar.tsx b/src/components/Navbar.tsx
+index 36f6fdf..b525f86 100644
+--- a/src/components/Navbar.tsx
++++ b/src/components/Navbar.tsx
+@@ -8,13 +8,15 @@ import {
+   Layers, 
+   Play, 
+   Sparkles,
+-  Monitor
++  Monitor,
++  Package
+ } from 'lucide-react';
+ 
+ interface NavbarProps {
+   activeTab: ViewTab;
+   onTabChange: (tab: ViewTab) => void;
+   onLaunchContainer: () => void;
++  onOpenApkModal: () => void;
+   activeContainerName: string;
+ }
+ 
+@@ -22,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
+   activeTab,
+   onTabChange,
+   onLaunchContainer,
++  onOpenApkModal,
+   activeContainerName,
+ }) => {
+   const tabs: { id: ViewTab; label: string; icon: React.ReactNode }[] = [
+@@ -79,14 +82,17 @@ export const Navbar: React.FC<NavbarProps> = ({
+             })}
+           </nav>
+ 
+-          {/* Quick Launch & Status */}
+-          <div className="flex items-center space-x-3">
+-            <div className="hidden sm:flex flex-col items-end text-right text-xs">
+-              <span className="text-neutral-400">Target Container:</span>
+-              <span className="text-neutral-200 font-medium truncate max-w-[140px]">
+-                {activeContainerName}
+-              </span>
+-            </div>
++          {/* Quick Launch & Actions */}
++          <div className="flex items-center space-x-2.5">
++            <button
++              id="open-apk-builds-btn"
++              onClick={onOpenApkModal}
++              className="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-neutral-800 hover:bg-neutral-700 text-rose-300 border border-rose-500/30 transition-all hover:border-rose-500/60 shadow-sm"
++              title="View APK Build & CI Dispatch configuration"
++            >
++              <Package className="w-3.5 h-3.5 text-rose-400" />
++              <span className="hidden sm:inline">APK Builds</span>
++            </button>
+ 
+             <button
+               id="quick-launch-button"
+-- 
+2.34.1
+
+
+From 45b388d0500ace031d32c12a9eca67473e82ead6 Mon Sep 17 00:00:00 2001
+From: Jacopo Hernandez <jacopo.hernandez@bannerlator.internal>
+Date: Thu, 17 Sep 2026 12:26:18 +0000
+Subject: [PATCH 2/2] feat(ui): display personal fork remotes and CI trigger
+ actions in APK modal
+
+---
+ src/components/ApkBuildModal.tsx | 40 +++++++++++++++++++++++++++-----
+ 1 file changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/src/components/ApkBuildModal.tsx b/src/components/ApkBuildModal.tsx
+index 2102c41..ab92910 100644
+--- a/src/components/ApkBuildModal.tsx
++++ b/src/components/ApkBuildModal.tsx
+@@ -265,15 +265,43 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
+             </div>
+           </div>
+ 
+-          {/* GitHub Actions CI/CD Pipeline Info */}
+-          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-2">
+-            <div className="flex items-center space-x-2 text-white font-semibold">
+-              <GitBranch className="w-4 h-4 text-rose-400" />
+-              <span>CI/CD Workflow Execution on Push</span>
++          {/* GitHub Actions CI/CD Pipeline & Fork Info */}
++          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-3">
++            <div className="flex items-center justify-between">
++              <div className="flex items-center space-x-2 text-white font-semibold">
++                <GitBranch className="w-4 h-4 text-rose-400" />
++                <span>Personal Fork & CI Deployment</span>
++              </div>
++              <a
++                href="https://github.com/Sanketpathania/BannerlatorPowerVr/actions"
++                target="_blank"
++                rel="noreferrer"
++                className="flex items-center space-x-1 text-rose-400 hover:text-rose-300 font-medium"
++              >
++                <span>View Actions</span>
++                <ExternalLink className="w-3.5 h-3.5" />
++              </a>
+             </div>
+             <p className="text-neutral-400 leading-relaxed">
+-              When commits are pushed to <code className="text-neutral-300">master</code>, the workflow at <code className="text-rose-300">.github/workflows/build-artifacts.yml</code> runs the <code className="text-neutral-300">_build.yml</code> reusable matrix. Each flavor builds concurrently across Ubuntu runners with JDK 17, Android SDK 34, and NDK r25c, uploading the three independent APK artifacts directly to GitHub Actions.
++              Your git remote has been configured to point to your personal fork <code className="text-rose-300">Sanketpathania/BannerlatorPowerVr</code>. Once pushed, GitHub Actions runners automatically build the 3 APK flavors via <code className="text-neutral-300">build-artifacts.yml</code> and publish the APK binaries.
+             </p>
++
++            <div className="space-y-1.5 pt-1">
++              <div className="flex items-center justify-between text-[11px] text-neutral-400 font-mono">
++                <span>Active Git Remotes:</span>
++                <span className="text-neutral-500">origin &rarr; Sanketpathania/BannerlatorPowerVr.git</span>
++              </div>
++              <div className="bg-neutral-900 rounded-lg p-2.5 border border-neutral-800 font-mono text-[11px] flex items-center justify-between text-neutral-300">
++                <code className="text-rose-300">git push -u origin master</code>
++                <button
++                  onClick={() => handleCopy("git push -u origin master", 2)}
++                  className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors shrink-0 ml-2"
++                  title="Copy push command"
++                >
++                  {copiedIndex === 2 ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
++                </button>
++              </div>
++            </div>
+           </div>
+         </div>
+ 
+-- 
+2.34.1
+

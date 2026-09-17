@@ -149,23 +149,35 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
                 </div>
               </div>
             </div>
-            <button
-              id="download-build-manifest-btn"
-              onClick={handleDownloadManifest}
-              className="flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition-colors shadow-md shadow-rose-950/40 shrink-0"
-            >
-              {downloadSuccess ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-300" />
-                  <span>Manifest Saved!</span>
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  <span>Download Build Spec</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center space-x-2 shrink-0">
+              <a
+                id="download-git-patch-btn"
+                href="/bannerlator-pixel10-dxt.patch"
+                download="bannerlator-pixel10-dxt.patch"
+                className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition-colors border border-neutral-700"
+                title="Download unified git patch file"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Git Patch</span>
+              </a>
+              <button
+                id="download-build-manifest-btn"
+                onClick={handleDownloadManifest}
+                className="flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium transition-colors shadow-md shadow-rose-950/40"
+              >
+                {downloadSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>Manifest Saved!</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span>Download Build Spec</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Flavor Selector */}
@@ -265,15 +277,43 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
             </div>
           </div>
 
-          {/* GitHub Actions CI/CD Pipeline Info */}
-          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-2">
-            <div className="flex items-center space-x-2 text-white font-semibold">
-              <GitBranch className="w-4 h-4 text-rose-400" />
-              <span>CI/CD Workflow Execution on Push</span>
+          {/* GitHub Actions CI/CD Pipeline & Fork Info */}
+          <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-white font-semibold">
+                <GitBranch className="w-4 h-4 text-rose-400" />
+                <span>Personal Fork & CI Deployment</span>
+              </div>
+              <a
+                href="https://github.com/Sanketpathania/BannerlatorPowerVr/actions"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center space-x-1 text-rose-400 hover:text-rose-300 font-medium"
+              >
+                <span>View Actions</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
             <p className="text-neutral-400 leading-relaxed">
-              When commits are pushed to <code className="text-neutral-300">master</code>, the workflow at <code className="text-rose-300">.github/workflows/build-artifacts.yml</code> runs the <code className="text-neutral-300">_build.yml</code> reusable matrix. Each flavor builds concurrently across Ubuntu runners with JDK 17, Android SDK 34, and NDK r25c, uploading the three independent APK artifacts directly to GitHub Actions.
+              Your git remote has been configured to point to your personal fork <code className="text-rose-300">Sanketpathania/BannerlatorPowerVr</code>. Once pushed, GitHub Actions runners automatically build the 3 APK flavors via <code className="text-neutral-300">build-artifacts.yml</code> and publish the APK binaries.
             </p>
+
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-[11px] text-neutral-400 font-mono">
+                <span>Active Git Remotes:</span>
+                <span className="text-neutral-500">origin &rarr; Sanketpathania/BannerlatorPowerVr.git</span>
+              </div>
+              <div className="bg-neutral-900 rounded-lg p-2.5 border border-neutral-800 font-mono text-[11px] flex items-center justify-between text-neutral-300">
+                <code className="text-rose-300">git push -u origin master</code>
+                <button
+                  onClick={() => handleCopy("git push -u origin master", 2)}
+                  className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors shrink-0 ml-2"
+                  title="Copy push command"
+                >
+                  {copiedIndex === 2 ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
