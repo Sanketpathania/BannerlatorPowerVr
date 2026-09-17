@@ -50,7 +50,6 @@ jobs:
         flavor:
           - { id: standard, task: assembleStandardRelease }
           - { id: ludashi,  task: assembleLudashiRelease  }
-          - { id: pubg,     task: assemblePubgRelease     }
 
     name: build (${{ matrix.flavor.id }})
 
@@ -281,7 +280,7 @@ jobs:
           ~/.cargo/registry/cache
           ~/.cargo/git/db
           app/src/main/cpp/bl-steam-client/rust/target
-        key: blsteam-${{ steps.rust.outputs.rustc }}-${{ hashFiles('app/src/main/cpp/bl-steam-client/rust/Cargo.lock') }}
+        key: blsteam-${{ steps.rust.outputs.rustc }}-${{ hashFiles('app/src/main/cpp/bl-steam-client/rust/Cargo.toml', 'app/src/main/cpp/bl-steam-client/rust/Cargo.lock') }}
         restore-keys: |
           blsteam-${{ steps.rust.outputs.rustc }}-
 
@@ -294,7 +293,7 @@ jobs:
         export AR_aarch64_linux_android="$NDK_BIN/llvm-ar"
         export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/aarch64-linux-android26-clang"
         cd app/src/main/cpp/bl-steam-client/rust
-        cargo build --locked --release --target aarch64-linux-android --lib
+        cargo build --release --target aarch64-linux-android --lib
         SO=target/aarch64-linux-android/release/libblsteam.so
         test -s "$SO"
         # Rebrand + packaging assertion: the JNI entry point Kotlin binds at boot must be exported,
@@ -324,15 +323,15 @@ jobs:
       continue-on-error: true
       run: |
         cd app/src/main/cpp/bl-steam-client/rust
-        cargo test --locked
+        cargo test
 
     - name: bl-steam-client dependency audit (cargo tree + licenses)
       run: |
         cd app/src/main/cpp/bl-steam-client/rust
         echo "== crates linked into libblsteam.so (aarch64-linux-android; normal+build deps) =="
-        cargo tree --locked --target aarch64-linux-android -e normal,build --prefix none --format '{p} {l}' | sort -u
+        cargo tree --target aarch64-linux-android -e normal,build --prefix none --format '{p} {l}' | sort -u
         echo "== -sys crates =="
-        cargo tree --locked --target aarch64-linux-android -e normal,build --prefix none --format '{p}' | sort -u | grep -- '-sys' || echo "(none)"
+        cargo tree --target aarch64-linux-android -e normal,build --prefix none --format '{p}' | sort -u | grep -- '-sys' || echo "(none)"
 
     - name: Restore Galaxy Performance SDK jar (optional, from secret)
       # Decodes the proprietary Samsung jar from the encrypted secret into the git-ignored

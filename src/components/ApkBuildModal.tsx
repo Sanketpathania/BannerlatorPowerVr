@@ -23,7 +23,7 @@ interface ApkBuildModalProps {
 
 export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [activeFlavor, setActiveFlavor] = useState<'standard' | 'ludashi' | 'pubg'>('ludashi');
+  const [activeFlavor, setActiveFlavor] = useState<'standard' | 'ludashi'>('ludashi');
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   if (!isOpen) return null;
@@ -46,15 +46,6 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
       size: '~588 MB',
       description: 'Optimized for mobile GPUs with WinlatorHUD, Vegas Engine 3.0, and Pixel 10 PowerVR DXT BCn transcoding.',
       recommended: true,
-    },
-    {
-      id: 'pubg' as const,
-      name: 'PUBG Layer Flavor',
-      apkFile: 'Bannerlator-1.0-pixel10-dxt-pubg.apk',
-      task: './gradlew assemblePubgRelease',
-      size: '~594 MB',
-      description: 'Includes GameNative 20260723 driver layer and extended controller mapping presets.',
-      recommended: false,
     }
   ];
 
@@ -69,7 +60,7 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
       project: "Bannerlator (Winlator Star Fork)",
       version: "1.0-pixel10-dxt",
       commitAuthor: "Jacopo Hernandez",
-      branch: "master",
+      branch: "main",
       targetHardware: "Google Pixel 10 (Tensor G5 - Imagination PowerVR DXT-48-1536)",
       gpuProfile: {
         vendorId: 4112,
@@ -82,8 +73,7 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
       ciWorkflow: ".github/workflows/build-artifacts.yml",
       matrixJobs: [
         { flavor: "standard", task: "assembleStandardRelease", output: "Bannerlator-1.0-pixel10-dxt-standard.apk" },
-        { flavor: "ludashi", task: "assembleLudashiRelease", output: "Bannerlator-1.0-pixel10-dxt-ludashi.apk" },
-        { flavor: "pubg", task: "assemblePubgRelease", output: "Bannerlator-1.0-pixel10-dxt-pubg.apk" }
+        { flavor: "ludashi", task: "assembleLudashiRelease", output: "Bannerlator-1.0-pixel10-dxt-ludashi.apk" }
       ],
       generatedAt: new Date().toISOString()
     };
@@ -187,10 +177,10 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
                 Select Product Flavor for APK Output
               </label>
               <span className="text-xs text-neutral-500 font-mono">
-                matrix: [standard, ludashi, pubg]
+                matrix: [standard, ludashi]
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {flavors.map((f) => {
                 const isSelected = activeFlavor === f.id;
                 return (
@@ -297,7 +287,7 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
                 <li>Click the <strong className="text-white">Settings / Overflow menu (&vellip;)</strong> in the top header of AI Studio.</li>
                 <li>Select <strong className="text-rose-400">"Export to GitHub"</strong>.</li>
                 <li>Choose repository <strong className="text-white">Sanketpathania/BannerlatorPowerVr</strong> and target branch <strong className="text-white">main</strong>.</li>
-                <li>Confirm export: GitHub Actions will immediately start compiling the Standard, Ludashi, and PUBG APKs!</li>
+                <li>Confirm export: GitHub Actions will immediately start compiling the Standard and Ludashi APKs!</li>
               </ol>
             </div>
           </div>
@@ -320,7 +310,7 @@ export const ApkBuildModal: React.FC<ApkBuildModalProps> = ({ isOpen, onClose })
               </a>
             </div>
             <p className="text-neutral-400 leading-relaxed">
-              Your git remote has been configured to point to your personal fork <code className="text-rose-300">Sanketpathania/BannerlatorPowerVr</code>. Once pushed, GitHub Actions runners automatically build the 3 APK flavors via <code className="text-neutral-300">build-artifacts.yml</code> and publish the APK binaries.
+              Your git remote has been configured to point to your personal fork <code className="text-rose-300">Sanketpathania/BannerlatorPowerVr</code>. Once pushed, GitHub Actions runners automatically build the Standard and Ludashi APK flavors via <code className="text-neutral-300">build-artifacts.yml</code> and publish the APK binaries.
             </p>
 
             <div className="space-y-1.5 pt-1">
