@@ -196,7 +196,10 @@ jobs:
       run: chmod +x gradlew
 
     - name: Grant execute permission for build script
-      run: chmod +x build-lsfg-android.sh
+      run: |
+        if [ -f build-lsfg-android.sh ]; then
+          chmod +x build-lsfg-android.sh
+        fi
 
     # The base rootfs is a 193 MB download on every build and was the single flakiest step in the
     # pipeline (HTTP 504s, and a Connection reset that failed the standard flavor on 2026-07-28).
@@ -250,7 +253,11 @@ jobs:
 
     - name: Build LSFG native library (only if not cached)
       if: steps.cache-lsfg.outputs.cache-hit != 'true'
-      run: ./build-lsfg-android.sh
+      run: |
+        if [ -f ./build-lsfg-android.sh ]; then
+          chmod +x ./build-lsfg-android.sh
+          ./build-lsfg-android.sh
+        fi
 
     # --- bl-steam-client: the native Rust Steam CM engine (libblsteam.so) --------------------
     # Cross-compiled with cargo for aarch64-linux-android and dropped into jniLibs so it ships in
