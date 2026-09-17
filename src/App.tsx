@@ -14,6 +14,7 @@ import { InputControlsView } from './components/InputControlsView';
 import { PowerVRAdvisorView } from './components/PowerVRAdvisorView';
 import { WineComponentsView } from './components/WineComponentsView';
 import { SessionSimulatorModal } from './components/SessionSimulatorModal';
+import { ApkBuildModal } from './components/ApkBuildModal';
 import { Sparkles, Check, Smartphone, Zap } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -67,6 +68,7 @@ export const App: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<ViewTab>('containers');
+  const [apkModalOpen, setApkModalOpen] = useState(false);
   const [sessionModalOpen, setSessionModalOpen] = useState(false);
   const [activeSessionContainer, setActiveSessionContainer] = useState<Container | null>(null);
   const [activeSessionShortcut, setActiveSessionShortcut] = useState<Shortcut | null>(null);
@@ -250,6 +252,7 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onLaunchContainer={() => handleLaunchContainer(activeContainer)}
+        onOpenApkModal={() => setApkModalOpen(true)}
         activeContainerName={activeContainer?.name || 'Default'}
       />
 
@@ -336,6 +339,12 @@ export const App: React.FC = () => {
           }}
         />
       )}
+
+      {/* APK Build & Release Modal */}
+      <ApkBuildModal
+        isOpen={apkModalOpen}
+        onClose={() => setApkModalOpen(false)}
+      />
     </div>
   );
 };

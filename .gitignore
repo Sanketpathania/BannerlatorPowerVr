@@ -28,3 +28,8 @@ scratchpad/
 # dxvk-nvapi dlls: fetched and sha256-checked by _build.yml from the release pinned in
 # app/src/main/assets/dxvk-nvapi/manifest.json, never committed.
 app/src/main/assets/dxvk-nvapi/*.dll
+
+# Web applet distribution and dependencies
+node_modules/
+dist/
+.vite/

@@ -8,9 +8,18 @@ on:
   workflow_dispatch:
     inputs:
       release_number:
-        description: 'Label for APK file names (e.g. 1.0-fixes)'
+        description: 'Label for APK file names (e.g. 1.0-pixel10-dxt)'
         required: true
-        default: '1.0-test'
+        default: '1.0-pixel10-dxt'
+  push:
+    branches:
+      - master
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -19,7 +28,7 @@ jobs:
   build:
     uses: ./.github/workflows/_build.yml
     with:
-      release_number: ${{ inputs.release_number }}
+      release_number: ${{ inputs.release_number || '1.0-pixel10-dxt' }}
     secrets:
       # Test builds bundle the Samsung Galaxy Performance SDK when the secret is present
       # (empty otherwise). release.yml deliberately does NOT pass this, so public release

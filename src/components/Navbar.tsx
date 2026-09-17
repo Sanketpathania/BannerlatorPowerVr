@@ -8,13 +8,15 @@ import {
   Layers, 
   Play, 
   Sparkles,
-  Monitor
+  Monitor,
+  Package
 } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: ViewTab;
   onTabChange: (tab: ViewTab) => void;
   onLaunchContainer: () => void;
+  onOpenApkModal: () => void;
   activeContainerName: string;
 }
 
@@ -22,6 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onTabChange,
   onLaunchContainer,
+  onOpenApkModal,
   activeContainerName,
 }) => {
   const tabs: { id: ViewTab; label: string; icon: React.ReactNode }[] = [
@@ -79,14 +82,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Quick Launch & Status */}
-          <div className="flex items-center space-x-3">
-            <div className="hidden sm:flex flex-col items-end text-right text-xs">
-              <span className="text-neutral-400">Target Container:</span>
-              <span className="text-neutral-200 font-medium truncate max-w-[140px]">
-                {activeContainerName}
-              </span>
-            </div>
+          {/* Quick Launch & Actions */}
+          <div className="flex items-center space-x-2.5">
+            <button
+              id="open-apk-builds-btn"
+              onClick={onOpenApkModal}
+              className="flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-neutral-800 hover:bg-neutral-700 text-rose-300 border border-rose-500/30 transition-all hover:border-rose-500/60 shadow-sm"
+              title="View APK Build & CI Dispatch configuration"
+            >
+              <Package className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">APK Builds</span>
+            </button>
 
             <button
               id="quick-launch-button"
